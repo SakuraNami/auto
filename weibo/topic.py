@@ -4,8 +4,8 @@ SakuraNami <39543214+SakuraNami@users.noreply.github.com>
 微博超话签到模块
 需要安装的依赖 在青龙面板 依赖管理 Python3 中添加
 requests 和 ServerPush
-需要抓包 微博国际版app 的超话列表链接
-以 https://api.weibo.cn/2/cardlist? 开头的链接
+需要抓包 微博国际版app - 我的 - 关注的超话 - 往下拉一段 刷新翻页 如果超话数量不多 打开了应该也可以
+找到以 https://api.weibo.cn/2/cardlist? 开头的链接
 填写在青龙环境变量里 变量名 topic_sc 有多个账号就添加多个
 如果在本地运行 需要修改第 25 行 user_list = None
 将 None 改为你的ck 如果有多个 ck 使用 & 连接
@@ -29,7 +29,7 @@ sleep_time = 3
 # 是否发送通知 默认关闭
 send_notify = False
 # Bark_token
-Bark_token = ''
+Bark_token = os.environ.get('Bark_token')
 # 通知发送渠道
 if send_notify and Bark_token:
     Push = ServerPush.Bark(Bark_token)
@@ -74,6 +74,7 @@ class Topic:
         text = ck[ck.find('cardlist?') + len('cardlist?'):len(ck)]
         for i, value in enumerate(text.split('&')):
             params[value[0:value.find('=')]] = value[value.find('=') + 1:len(value)]
+        params['containerid'] = '100803_-_followsuper'
         return params
 
     def get_follow_topic_list(self, time: int = 3):
@@ -168,9 +169,12 @@ for key in user_list:
     _Topic = Topic(cookie=key)
     follow_topic_list = _Topic.get_follow_topic_list(time=sleep_time)
     # 开始签到
-    if follow_topic_list[0]['title_sub'] == follow_topic_list[len(follow_topic_list) - 1]['title_sub']:
-        del follow_topic_list[0]
-        _Topic.start_sign(follow_topic_list, time=sleep_time)
+    if len(follow_topic_list) > 1:
+        if follow_topic_list[0]['title_sub'] == follow_topic_list[len(follow_topic_list) - 1]['title_sub']:
+            del follow_topic_list[0]
+            _Topic.start_sign(follow_topic_list, time=sleep_time)
+        else:
+            _Topic.start_sign(follow_topic_list, time=sleep_time)
     else:
         _Topic.start_sign(follow_topic_list, time=sleep_time)
 print('任务完成')
